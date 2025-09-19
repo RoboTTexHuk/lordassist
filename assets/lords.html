@@ -1,0 +1,1246 @@
+<!DOCTYPE html><html lang="en"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Lords Assistant — FarmTracker</title>
+
+  <!-- Tailwind (keeps provided palette) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FF6B35',
+            secondary: '#000000',
+            tertiary: '#FFFFFF'
+          },
+          spacing: {
+            'safe-b': 'env(safe-area-inset-bottom)',
+            'safe-t': 'env(safe-area-inset-top)'
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- FontAwesome -->
+  <script>window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&amp;display=swap">
+
+  <style>
+    /* Base */
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif !important; background:#ffffff; color:#111827; margin:0; }
+    .fa, .fas, .far, .fal, .fab { font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important; }
+    ::-webkit-scrollbar { display: none; }
+    html, body { -ms-overflow-style: none; scrollbar-width: none; }
+    body { overscroll-behavior-y: none; -webkit-overflow-scrolling: touch; }
+
+    /* Fullscreen app container for iPhone/iPad */
+    #app-shell { min-height: 100vh; min-height: calc(100vh + env(safe-area-inset-top) + env(safe-area-inset-bottom)); display:flex; flex-direction:column; }
+
+    /* Header with safe area */
+    .with-safe-top { padding-top: max(12px, env(safe-area-inset-top)); }
+    .with-safe-bottom { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+
+    /* Cards and helpers (keep light design) */
+    .card { background: #F9FAFB; border: 1px solid #E5E7EB; }
+    .soft { background: #FFFFFF; }
+    .btn-primary { background: #FF6B35; color: #fff; }
+    .btn-outline { border: 1px solid #FF6B35; color: #FF6B35; background: transparent; }
+    .content-card {}
+    .ghost { opacity: .4; }
+
+    /* Modal (elevated, fullscreen-friendly) */
+    .modal-layer { position: fixed; inset: 0; z-index: 60; display: none; }
+    .modal-layer.active { display: block; }
+    .modal-backdrop {
+      position: absolute; inset: 0;
+      background: radial-gradient(1200px 600px at 50% -10%, rgba(0,0,0,0.18), rgba(0,0,0,0.70)),
+                  linear-gradient(to bottom, rgba(0,0,0,0.35), rgba(0,0,0,0.80));
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    }
+    .modal-shell { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 12px; }
+    @media (min-width: 640px) { .modal-shell { align-items: center; } }
+    .modal {
+      width: min(720px, calc(100vw - 24px));
+      border-radius: 16px;
+      background: #0b0f13; color: #fff;
+      border: 1px solid #1f2a37; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+      overflow: hidden; transform: translateY(16px); opacity: 0;
+      transition: transform .25s ease, opacity .25s ease;
+    }
+    .modal-layer.active .modal { transform: translateY(0); opacity: 1; }
+    .modal-accent { width: 44px; height: 44px; background:#FF6B35; color:#000; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+    .icon-choice { width:48px; height:48px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:#1f2937; color:#FF6B35; }
+    .icon-choice.active { outline:2px solid #FF6B35; }
+    .thumb { width:48px; height:48px; border-radius:10px; object-fit:cover; }
+    .field { width: 100%; background: #FFFFFF; color:#000000; border-radius: 8px; padding: 10px 12px; }
+
+    /* Responsive max width: take full screen on iPhone/iPad */
+    #page-width { width: 100%; max-width: 1100px; margin: 0 auto; }
+    @media (min-width: 1024px) {
+      #page-width { max-width: 1200px; }
+    }
+
+    .editable:hover { outline: 2px dashed rgba(17,24,39,.18); }
+  </style>
+  <script src="https://puc.poecdn.net/authenticated_preview_page/syncedState.bd4eeeb8e8e02052ee92.js"></script></head>
+<body>
+
+<div id="app-shell">
+  <!-- Header -->
+  <header class="bg-black text-white px-4 py-3 with-safe-top flex items-center justify-between relative z-40">
+    <button id="menu-toggle" class="text-white" aria-label="open menu">
+      <i class="fa-solid fa-bars text-xl"></i>
+    </button>
+    <h1 class="text-base sm:text-lg font-bold">Lords Assistant</h1>
+    <button id="search-toggle" class="text-white" aria-label="toggle search">
+      <i class="fa-solid fa-magnifying-glass text-xl"></i>
+    </button>
+  </header>
+
+  <!-- Collapsible search -->
+  <div id="search-bar" class="hidden px-4 py-3 border-b border-gray-200 bg-white">
+    <div id="page-width" class="flex gap-2">
+      <input id="search-input" type="text" placeholder="Search content…" class="w-full p-2 rounded border text-black">
+      <button id="search-clear" class="btn-outline px-3 py-2 rounded">
+        <i class="fa-solid fa-xmark mr-1"></i>Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar (slides over, but page stays fullscreen) -->
+  <nav id="sidebar" class="fixed top-0 left-0 h-full w-80 bg-black text-white transform -translate-x-full transition-transform duration-300 z-50">
+    <div class="p-4" style="padding-top: calc(env(safe-area-inset-top) + 12px); border-bottom: 1px solid #374151;">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold text-primary">Menu</h2>
+        <button id="close-menu" class="text-white" aria-label="close menu">
+          <i class="fa-solid fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+    <ul class="py-4">
+      <li>
+        <button class="tab-btn w-full text-left px-6 py-4 hover:bg-gray-800 border-b border-gray-700 flex items-center justify-between" data-tab="goals">
+          <div class="flex items-center"><i class="fa-solid fa-target text-primary mr-3"></i><span>Personal Goals</span></div>
+          <i class="fa-solid fa-chevron-right text-gray-400"></i>
+        </button>
+      </li>
+      <li>
+        <button class="tab-btn w-full text-left px-6 py-4 hover:bg-gray-800 border-b border-gray-700 flex items-center justify-between" data-tab="reminders">
+          <div class="flex items-center"><i class="fa-solid fa-bell text-primary mr-3"></i><span>Auto-Reminders</span></div>
+          <i class="fa-solid fa-chevron-right text-gray-400"></i>
+        </button>
+      </li>
+      <li>
+        <button class="tab-btn w-full text-left px-6 py-4 hover:bg-gray-800 border-b border-gray-700 flex items-center justify-between" data-tab="badges">
+          <div class="flex items-center"><i class="fa-solid fa-trophy text-primary mr-3"></i><span>Badges &amp; Leaderboards</span></div>
+          <i class="fa-solid fa-chevron-right text-gray-400"></i>
+        </button>
+      </li>
+      <li>
+        <button class="tab-btn w-full text-left px-6 py-4 hover:bg-gray-800 border-b border-gray-700 flex items-center justify-between" data-tab="economy">
+          <div class="flex items-center"><i class="fa-solid fa-coins text-primary mr-3"></i><span>Economy &amp; Inventory</span></div>
+          <i class="fa-solid fa-chevron-right text-gray-400"></i>
+        </button>
+      </li>
+      <li>
+        <button class="tab-btn w-full text-left px-6 py-4 hover:bg-gray-800 border-b border-gray-700 flex items-center justify-between" data-tab="resources">
+          <div class="flex items-center"><i class="fa-solid fa-hammer text-primary mr-3"></i><span>Resource Tracking</span></div>
+          <i class="fa-solid fa-chevron-right text-gray-400"></i>
+        </button>
+      </li>
+      <li>
+        <button class="tab-btn w-full text-left px-6 py-4 hover:bg-gray-800 flex items-center justify-between" data-tab="analytics">
+          <div class="flex items-center"><i class="fa-solid fa-chart-line text-primary mr-3"></i><span>Analytics</span></div>
+          <i class="fa-solid fa-chevron-right text-gray-400"></i>
+        </button>
+      </li>
+    </ul>
+  </nav>
+  <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
+
+  <!-- Main content; stretches to full screen width but keeps nice max-width inside -->
+  <main id="main" class="flex-1 bg-white">
+    <section id="page-width" class="p-4 with-safe-bottom">
+
+      <!-- Goals -->
+      <div id="goals-tab" class="tab-content">
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-black">Personal Goals</h2>
+            <button class="bg-primary text-white w-11 h-11 rounded-full shadow-lg open-add" data-target="goals-list" data-context="goals" aria-label="add">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <p class="text-gray-600 text-sm mb-4">Track your farming objectives and weekly challenges</p>
+        </div>
+
+        <div id="goals-list" class="space-y-4" data-sortable="">
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 content-card" draggable="true" data-type="goal" data-progress="65" data-badge="Weekly">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-black editable" data-edit="title">Harvest 100 Carrots</div>
+              <span class="text-xs bg-primary text-white px-2 py-1 rounded-full editable" data-edit="badge">Weekly</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+              <div class="bg-primary h-2 rounded-full" style="width: 65%"></div>
+            </div>
+            <div class="flex items-center justify-end gap-3 text-gray-500 text-sm">
+              <span class="editable" data-edit="counter">65/100</span>
+              <button class="edit-card hover:text-primary" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="hover:text-red-500" data-remove="" title="Remove"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 content-card" draggable="true" data-type="goal" data-progress="100" data-badge="Daily">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-black editable" data-edit="title">Plant 50 Seeds</div>
+              <span class="text-xs bg-green-500 text-white px-2 py-1 rounded-full editable" data-edit="badge">Daily</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+              <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+            </div>
+            <div class="flex items-center justify-end gap-3 text-gray-500 text-sm">
+              <span class="editable" data-edit="counter">50/50</span>
+              <button class="edit-card hover:text-primary" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="hover:text-red-500" data-remove="" title="Remove"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 content-card" draggable="true" data-type="goal" data-progress="30" data-badge="Monthly">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-black editable" data-edit="title">Earn 1000 Coins</div>
+              <span class="text-xs bg-blue-500 text-white px-2 py-1 rounded-full editable" data-edit="badge">Monthly</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+              <div class="bg-blue-500 h-2 rounded-full" style="width: 30%"></div>
+            </div>
+            <div class="flex items-center justify-end gap-3 text-gray-500 text-sm">
+              <span class="editable" data-edit="counter">300/1000</span>
+              <button class="edit-card hover:text-primary" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="hover:text-red-500" data-remove="" title="Remove"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+
+          <div class="soft rounded-xl p-4 border border-dashed border-gray-300 text-center cursor-pointer add-placeholder" data-target="goals-list" data-context="goals">
+            <i class="fa-solid fa-plus mr-2 text-primary"></i>
+            <span class="text-sm text-gray-700">Add content</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reminders -->
+      <div id="reminders-tab" class="tab-content hidden">
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-black">Auto-Reminders</h2>
+            <button class="bg-primary text-white w-11 h-11 rounded-full shadow-lg open-add" data-target="reminders-list" data-context="reminders" aria-label="add">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <p class="text-gray-600 text-sm mb-4">Automated notifications and farming reports</p>
+        </div>
+
+        <div class="card rounded-xl p-4 mb-6">
+          <form id="reminder-form" class="grid grid-cols-1 gap-2">
+            <input class="w-full p-2 rounded border text-black" name="title" placeholder="Reminder title (e.g., Water Crops)">
+            <select class="w-full p-2 rounded border text-black" name="freq">
+              <option value="Every 6 hours">Every 6 hours</option>
+              <option value="Daily at 8:00 AM">Daily at 8:00 AM</option>
+              <option value="Weekly">Weekly</option>
+            </select>
+            <button class="btn-primary px-3 py-2 rounded font-semibold" type="submit">
+              <i class="fa-solid fa-bell mr-1"></i>Create
+            </button>
+          </form>
+        </div>
+
+        <div id="reminders-list" class="space-y-4" data-sortable="">
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 content-card" draggable="true" data-type="reminder" data-freq="Every 6 hours">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <i class="fa-solid fa-bell text-primary mr-3"></i>
+                <div>
+                  <div class="font-semibold text-black editable" data-edit="title">Water Crops</div>
+                  <div class="text-sm text-gray-600 editable" data-edit="freq">Every 6 hours</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="sr-only peer" checked="">
+                  <span class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></span>
+                </label>
+                <button class="edit-card text-gray-500 hover:text-primary" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button class="text-gray-400 hover:text-red-500" data-remove="" title="Remove"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="soft rounded-xl p-4 border border-dashed border-gray-300 text-center cursor-pointer add-placeholder" data-target="reminders-list" data-context="reminders">
+            <i class="fa-solid fa-plus mr-2 text-primary"></i>
+            <span class="text-sm text-gray-700">Add content</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <div id="badges-tab" class="tab-content hidden">
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-black">Badges &amp; Leaderboards</h2>
+            <button class="bg-primary text-white w-11 h-11 rounded-full shadow-lg open-add" data-target="badges-list" data-context="badges">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <p class="text-gray-600 text-sm mb-4">Your achievements and seasonal rankings</p>
+        </div>
+
+        <div id="badges-list" class="space-y-4" data-sortable="">
+          <div class="card rounded-xl p-4 content-card" draggable="true" data-type="badge-block">
+            <div class="font-semibold text-black mb-3 editable" data-edit="title">Recent Badges</div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div class="bg-gradient-to-br from-yellow-400 to-yellow-600 p-4 rounded-lg text-center">
+                <i class="fa-solid fa-crown text-white text-2xl mb-2"></i>
+                <p class="text-xs text-white font-medium editable" data-edit="badge-name">Master Farmer</p>
+              </div>
+              <div class="bg-gradient-to-br from-green-400 to-green-600 p-4 rounded-lg text-center">
+                <i class="fa-solid fa-leaf text-white text-2xl mb-2"></i>
+                <p class="text-xs text-white font-medium editable" data-edit="badge-name">Green Thumb</p>
+              </div>
+              <div class="bg-gradient-to-br from-blue-400 to-blue-600 p-4 rounded-lg text-center">
+                <i class="fa-solid fa-tractor text-white text-2xl mb-2"></i>
+                <p class="text-xs text-white font-medium editable" data-edit="badge-name">Speed Planter</p>
+              </div>
+            </div>
+            <div class="flex justify-end mt-3 gap-2">
+              <button class="text-gray-500 hover:text-primary edit-card" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="text-gray-400 hover:text-red-500" data-remove="" title="Remove block"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+
+          <div class="soft rounded-xl p-4 border border-dashed border-gray-300 text-center cursor-pointer add-placeholder" data-target="badges-list" data-context="badges">
+            <i class="fa-solid fa-plus mr-2 text-primary"></i>
+            <span class="text-sm text-gray-700">Add content</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Economy -->
+      <div id="economy-tab" class="tab-content hidden">
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-black">Economy &amp; Inventory</h2>
+            <button class="bg-primary text-white w-11 h-11 rounded-full shadow-lg open-add" data-target="economy-list" data-context="economy">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <p class="text-gray-600 text-sm mb-4">Manage your coins and inventory items</p>
+        </div>
+
+        <div id="economy-list" class="space-y-4" data-sortable="">
+          <div class="bg-gradient-to-r from-primary to-orange-600 text-white p-4 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm opacity-90">Total Balance</p>
+                <p class="text-2xl font-bold editable" data-edit="balance">8,450 Coins</p>
+              </div>
+              <i class="fa-solid fa-coins text-3xl opacity-80"></i>
+            </div>
+          </div>
+
+          <div class="card rounded-xl p-4 content-card" draggable="true" data-type="inventory">
+            <div class="font-semibold text-black mb-3">Inventory</div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" id="inventory-grid">
+              <div class="bg-gray-50 p-3 rounded-lg inv-item" data-name="Carrots" data-qty="45" data-price="25">
+                <div class="flex items-center justify-between mb-2">
+                  <i class="fa-solid fa-carrot text-orange-500"></i>
+                  <span class="text-xs bg-gray-200 px-2 py-1 rounded editable" data-edit="qty">x45</span>
+                </div>
+                <p class="text-sm font-medium text-black editable" data-edit="name">Carrots</p>
+                <p class="text-xs text-gray-600 editable" data-edit="price">25 coins each</p>
+              </div>
+              <div class="bg-gray-50 p-3 rounded-lg inv-item" data-name="Seeds" data-qty="120" data-price="5">
+                <div class="flex items-center justify-between mb-2">
+                  <i class="fa-solid fa-seedling text-green-500"></i>
+                  <span class="text-xs bg-gray-200 px-2 py-1 rounded editable" data-edit="qty">x120</span>
+                </div>
+                <p class="text-sm font-medium text-black editable" data-edit="name">Seeds</p>
+                <p class="text-xs text-gray-600 editable" data-edit="price">5 coins each</p>
+              </div>
+              <div class="bg-gray-50 p-3 rounded-lg inv-item" data-name="Apples" data-qty="28" data-price="15">
+                <div class="flex items-center justify-between mb-2">
+                  <i class="fa-solid fa-apple-alt text-red-500"></i>
+                  <span class="text-xs bg-gray-200 px-2 py-1 rounded editable" data-edit="qty">x28</span>
+                </div>
+                <p class="text-sm font-medium text-black editable" data-edit="name">Apples</p>
+                <p class="text-xs text-gray-600 editable" data-edit="price">15 coins each</p>
+              </div>
+              <div class="bg-gray-50 p-3 rounded-lg inv-item" data-name="Tools" data-qty="3" data-price="200">
+                <div class="flex items-center justify-between mb-2">
+                  <i class="fa-solid fa-hammer"></i>
+                  <span class="text-xs bg-gray-200 px-2 py-1 rounded editable" data-edit="qty">x3</span>
+                </div>
+                <p class="text-sm font-medium text-black editable" data-edit="name">Tools</p>
+                <p class="text-xs text-gray-600 editable" data-edit="price">200 coins each</p>
+              </div>
+            </div>
+            <div class="flex justify-end mt-3 gap-2">
+              <button class="text-gray-500 hover:text-primary edit-card" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="text-gray-400 hover:text-red-500" data-remove="" title="Remove block"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+
+          <div class="soft rounded-xl p-4 border border-dashed border-gray-300 text-center cursor-pointer add-placeholder" data-target="economy-list" data-context="economy">
+            <i class="fa-solid fa-plus mr-2 text-primary"></i>
+            <span class="text-sm text-gray-700">Add content</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resources -->
+      <div id="resources-tab" class="tab-content hidden">
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-black">Resource Tracking</h2>
+            <button class="bg-primary text-white w-11 h-11 rounded-full shadow-lg open-add" data-target="resources-list" data-context="resources">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <p class="text-gray-600 text-sm mb-4">Crafting recipes and profitability calculator</p>
+        </div>
+
+        <div id="resources-list" class="space-y-4" data-sortable="">
+          <div class="card rounded-xl p-4 content-card" draggable="true" data-type="recipe">
+            <div class="font-semibold text-black mb-3">Crafting Recipes</div>
+
+            <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-green-500">
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-medium text-black editable" data-edit="recipe-name">Vegetable Soup</div>
+                <span class="text-sm bg-green-100 text-green-800 px-2 py-1 rounded editable" data-edit="profit">+75% profit</span>
+              </div>
+              <div class="text-xs text-gray-600 mb-2 editable" data-edit="ingredients">3 Carrots + 2 Potatoes + 1 Water</div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600 editable" data-edit="cost">Cost: 95 coins</span>
+                <span class="text-sm font-medium text-green-600 editable" data-edit="sell">Sell: 165 coins</span>
+              </div>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500 mt-3">
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-medium text-black editable" data-edit="recipe-name">Apple Pie</div>
+                <span class="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded editable" data-edit="profit">+50% profit</span>
+              </div>
+              <div class="text-xs text-gray-600 mb-2 editable" data-edit="ingredients">5 Apples + 2 Wheat + 1 Sugar</div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600 editable" data-edit="cost">Cost: 120 coins</span>
+                <span class="text-sm font-medium text-blue-600 editable" data-edit="sell">Sell: 180 coins</span>
+              </div>
+            </div>
+
+            <div class="flex justify-end mt-3 gap-2">
+              <button class="text-gray-500 hover:text-primary edit-card" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="text-gray-400 hover:text-red-500" data-remove="" title="Remove block"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+
+          <div class="card rounded-xl p-4 content-card" draggable="true" data-type="calculator">
+            <div class="font-semibold text-black mb-3">Profitability Calculator</div>
+            <div class="bg-primary/10 p-4 rounded-lg">
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label class="text-xs text-gray-600 mb-1 block">Item</label>
+                  <select class="w-full p-2 text-sm border rounded text-black">
+                    <option>Vegetable Soup</option>
+                    <option>Apple Pie</option>
+                    <option>Fruit Salad</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-600 mb-1 block">Quantity</label>
+                  <input type="number" value="10" class="w-full p-2 text-sm border rounded text-black">
+                </div>
+              </div>
+              <div class="text-center">
+                <p class="text-sm text-gray-600 mb-1">Estimated Profit</p>
+                <p class="text-2xl font-bold text-primary">+700 coins</p>
+              </div>
+            </div>
+            <div class="flex justify-end mt-3 gap-2">
+              <button class="text-gray-500 hover:text-primary edit-card" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="text-gray-400 hover:text-red-500" data-remove="" title="Remove block"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+
+          <div class="soft rounded-xl p-4 border border-dashed border-gray-300 text-center cursor-pointer add-placeholder" data-target="resources-list" data-context="resources">
+            <i class="fa-solid fa-plus mr-2 text-primary"></i>
+            <span class="text-sm text-gray-700">Add content</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics -->
+      <div id="analytics-tab" class="tab-content hidden">
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-black">Analytics</h2>
+            <button class="bg-primary text-white w-11 h-11 rounded-full shadow-lg open-add" data-target="analytics-list" data-context="analytics">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <p class="text-gray-600 text-sm mb-4">What's most profitable to farm today</p>
+        </div>
+
+        <div id="analytics-list" class="space-y-4" data-sortable="">
+          <div class="bg-green-50 p-4 rounded-xl border border-green-100 content-card" draggable="true" data-type="analytics-top">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-black editable" data-edit="title">Today's Best Crop</div>
+              <i class="fa-solid fa-trending-up text-green-600"></i>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-lg font-bold text-green-700 editable" data-edit="crop">Tomatoes</div>
+                <div class="text-sm text-green-600 editable" data-edit="gain">+85% profit margin</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm text-gray-600">Market Price</div>
+                <div class="font-bold text-green-700 editable" data-edit="price">45 coins</div>
+              </div>
+            </div>
+            <div class="flex justify-end mt-3 gap-2">
+              <button class="text-gray-500 hover:text-primary edit-card" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="text-gray-400 hover:text-red-500" data-remove="" title="Remove block"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+
+          <div class="card rounded-xl p-4 content-card" draggable="true" data-type="trend-list">
+            <div class="font-semibold text-black mb-3 editable" data-edit="title">Market Trends</div>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fa-solid fa-carrot text-orange-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium text-black editable" data-edit="item">Carrots</div>
+                    <div class="text-xs text-gray-600 editable" data-edit="price">25 coins</div>
+                  </div>
+                </div>
+                <div class="flex items-center text-green-600">
+                  <i class="fa-solid fa-arrow-up text-xs mr-1"></i>
+                  <span class="text-sm editable" data-edit="change">+12%</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fa-solid fa-apple-alt text-red-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium text-black editable" data-edit="item">Apples</div>
+                    <div class="text-xs text-gray-600 editable" data-edit="price">15 coins</div>
+                  </div>
+                </div>
+                <div class="flex items-center text-red-600">
+                  <i class="fa-solid fa-arrow-down text-xs mr-1"></i>
+                  <span class="text-sm editable" data-edit="change">-8%</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fa-solid fa-seedling text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium text-black editable" data-edit="item">Corn</div>
+                    <div class="text-xs text-gray-600 editable" data-edit="price">35 coins</div>
+                  </div>
+                </div>
+                <div class="flex items-center text-green-600">
+                  <i class="fa-solid fa-arrow-up text-xs mr-1"></i>
+                  <span class="text-sm editable" data-edit="change">+25%</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-end mt-3 gap-2">
+              <button class="text-gray-500 hover:text-primary edit-card" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="text-gray-400 hover:text-red-500" data-remove="" title="Remove block"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+
+          <div class="soft rounded-xl p-4 border border-dashed border-gray-300 text-center cursor-pointer add-placeholder" data-target="analytics-list" data-context="analytics">
+            <i class="fa-solid fa-plus mr-2 text-primary"></i>
+            <span class="text-sm text-gray-700">Add content</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<!-- Contextual Add/Edit Modal -->
+<div id="add-modal" class="modal-layer" aria-hidden="true">
+  <div class="modal-backdrop"></div>
+  <div class="modal-shell">
+    <div class="modal">
+      <div class="px-4 py-3 border-b border-[#1f2a37] flex items-center gap-3">
+        <div class="modal-accent"><i class="fa-solid fa-plus"></i></div>
+        <div class="flex-1">
+          <h3 id="modal-title" class="text-base sm:text-lg font-semibold">Add Content</h3>
+          <p id="modal-subtitle" class="text-xs text-gray-400">Choose an icon or upload a photo. Fill in the title and description.</p>
+        </div>
+        <button id="modal-close" class="text-gray-300 hover:text-white text-xl" aria-label="close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="add-form" class="p-4 space-y-4" autocomplete="off">
+        <input type="hidden" id="target-id">
+        <input type="hidden" id="context">
+        <input type="hidden" id="edit-path">
+
+        <!-- Media (used for generic cards) -->
+        <div id="media-row" class="hidden">
+          <label class="block text-sm text-gray-300 mb-2">Icon or Image</label>
+          <div class="flex items-start gap-4 flex-wrap">
+            <div class="grid grid-cols-8 gap-2">
+              <button class="icon-choice" type="button" data-icon="fa-seedling"><i class="fa-solid fa-seedling"></i></button>
+              <button class="icon-choice" type="button" data-icon="fa-coins"><i class="fa-solid fa-coins"></i></button>
+              <button class="icon-choice" type="button" data-icon="fa-bell"><i class="fa-solid fa-bell"></i></button>
+              <button class="icon-choice" type="button" data-icon="fa-trophy"><i class="fa-solid fa-trophy"></i></button>
+              <button class="icon-choice" type="button" data-icon="fa-apple-alt"><i class="fa-solid fa-apple-alt"></i></button>
+              <button class="icon-choice" type="button" data-icon="fa-carrot"><i class="fa-solid fa-carrot"></i></button>
+              <button class="icon-choice" type="button" data-icon="fa-wheat-awn"><i class="fa-solid fa-wheat-awn"></i></button>
+              <button class="icon-choice" type="button" data-icon="fa-chart-line"><i class="fa-solid fa-chart-line"></i></button>
+            </div>
+            <div class="flex items-center gap-3">
+              <label class="btn-outline px-3 py-2 rounded cursor-pointer select-none">
+                <input type="file" id="image-input" accept="image/*" class="hidden">
+                <i class="fa-solid fa-upload mr-1"></i>Upload
+              </label>
+              <img id="image-preview" class="thumb hidden" alt="preview">
+              <button id="image-clear" type="button" class="btn-outline px-2 py-1 rounded text-xs hidden"><i class="fa-solid fa-xmark mr-1"></i>Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Goals -->
+        <div id="goal-fields" class="hidden grid grid-cols-1 gap-3">
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Goal title</label>
+            <input id="goal-title" class="field" placeholder="Enter goal title">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">Target quantity</label>
+              <input id="goal-target" type="number" class="field" placeholder="100" min="1">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">Current progress</label>
+              <input id="goal-current" type="number" class="field" placeholder="0" min="0">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Period</label>
+            <select id="goal-badge" class="field">
+              <option>Daily</option>
+              <option>Weekly</option>
+              <option>Monthly</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Reminders -->
+        <div id="reminder-fields" class="hidden grid grid-cols-1 gap-3">
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Reminder title</label>
+            <input id="rem-title" class="field" placeholder="Water Crops">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Frequency</label>
+            <input id="rem-freq" class="field" placeholder="Every 6 hours">
+          </div>
+        </div>
+
+        <!-- Inventory -->
+        <div id="inventory-fields" class="hidden grid grid-cols-1 gap-3">
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">Item name</label>
+              <input id="inv-name" class="field" placeholder="Item name">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">Quantity</label>
+              <input id="inv-qty" type="number" class="field" placeholder="10" min="0">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">Price (coins)</label>
+              <input id="inv-price" type="number" class="field" placeholder="25" min="0">
+            </div>
+          </div>
+        </div>
+
+        <!-- Badges -->
+        <div id="badge-fields" class="hidden grid grid-cols-1 gap-3">
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Badge name</label>
+            <input id="badge-name" class="field" placeholder="Master Farmer">
+          </div>
+        </div>
+
+        <!-- Analytics -->
+        <div id="analytics-fields" class="hidden grid grid-cols-1 gap-3">
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Crop / Item</label>
+            <input id="an-item" class="field" placeholder="Tomatoes">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">Market price (coins)</label>
+              <input id="an-price" type="number" class="field" placeholder="45" min="0">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">Change</label>
+              <input id="an-change" class="field" placeholder="+12%">
+            </div>
+          </div>
+        </div>
+
+        <!-- Generic -->
+        <div id="generic-fields" class="hidden grid grid-cols-1 gap-3">
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Title</label>
+            <input id="gen-title" class="field" placeholder="Enter title">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Description</label>
+            <textarea id="gen-desc" class="field" rows="3" placeholder="Enter description"></textarea>
+          </div>
+        </div>
+
+        <div class="pt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" style="border-top: 1px solid #1f2a37;">
+          <label class="inline-flex items-center gap-2 text-sm text-gray-200">
+            <input id="agree" type="checkbox" class="w-4 h-4 rounded border-gray-500">
+            I confirm the data is correct
+          </label>
+          <div class="flex items-center gap-2">
+            <button type="button" id="modal-cancel" class="btn-outline px-3 py-2 rounded">Cancel</button>
+            <button type="submit" id="modal-submit" class="btn-primary px-4 py-2 rounded font-semibold disabled:opacity-50" disabled="">
+              <i class="fa-solid fa-check mr-2"></i>Save
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="px-4 pb-4">
+        <p class="text-center text-[11px] text-gray-400" style="padding-bottom: env(safe-area-inset-bottom);">Your choice will be saved locally on this device.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Sidebar
+  const menuToggle = document.getElementById('menu-toggle');
+  const closeMenuBtn = document.getElementById('close-menu');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  function openSidebar() {
+    sidebar.classList.remove('-translate-x-full');
+    overlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+  }
+  menuToggle.addEventListener('click', openSidebar);
+  closeMenuBtn?.addEventListener('click', closeSidebar);
+  overlay.addEventListener('click', closeSidebar);
+
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const tabId = button.getAttribute('data-tab');
+      tabContents.forEach(content => content.classList.add('hidden'));
+      document.getElementById(tabId + '-tab').classList.remove('hidden');
+      closeSidebar();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeSidebar(); closeModal(); }
+  });
+
+  // Search
+  const searchToggle = document.getElementById('search-toggle');
+  const searchBar = document.getElementById('search-bar');
+  const searchInput = document.getElementById('search-input');
+  const searchClear = document.getElementById('search-clear');
+  searchToggle.addEventListener('click', () => {
+    searchBar.classList.toggle('hidden');
+    if (!searchBar.classList.contains('hidden')) setTimeout(() => searchInput.focus(), 60);
+  });
+  searchClear.addEventListener('click', () => { searchInput.value = ''; applySearch(''); });
+  searchInput.addEventListener('input', (e) => applySearch(e.target.value.trim().toLowerCase()));
+  function applySearch(q) {
+    document.querySelectorAll('.content-card').forEach(card => {
+      const container = card.closest('[data-sortable]');
+      if (!container) return;
+      const text = card.innerText.toLowerCase();
+      card.style.display = q && !text.includes(q) ? 'none' : '';
+    });
+  }
+
+  // Modal
+  const addModal = document.getElementById('add-modal');
+  const modalClose = document.getElementById('modal-close');
+  const modalCancel = document.getElementById('modal-cancel');
+  const modalSubmit = document.getElementById('modal-submit');
+  const modalTitle = document.getElementById('modal-title');
+  const modalSubtitle = document.getElementById('modal-subtitle');
+
+  const targetIdInput = document.getElementById('target-id');
+  const contextInput = document.getElementById('context');
+  const editPathInput = document.getElementById('edit-path');
+
+  const agree = document.getElementById('agree');
+
+  // Field groups
+  const mediaRow = document.getElementById('media-row');
+  const goalFields = document.getElementById('goal-fields');
+  const reminderFields = document.getElementById('reminder-fields');
+  const inventoryFields = document.getElementById('inventory-fields');
+  const badgeFields = document.getElementById('badge-fields');
+  const analyticsFields = document.getElementById('analytics-fields');
+  const genericFields = document.getElementById('generic-fields');
+
+  // Inputs
+  const genTitle = document.getElementById('gen-title');
+  const genDesc = document.getElementById('gen-desc');
+  const goalTitle = document.getElementById('goal-title');
+  const goalTarget = document.getElementById('goal-target');
+  const goalCurrent = document.getElementById('goal-current');
+  const goalBadge = document.getElementById('goal-badge');
+  const remTitle = document.getElementById('rem-title');
+  const remFreq = document.getElementById('rem-freq');
+  const invName = document.getElementById('inv-name');
+  const invQty = document.getElementById('inv-qty');
+  const invPrice = document.getElementById('inv-price');
+  const badgeName = document.getElementById('badge-name');
+  const anItem = document.getElementById('an-item');
+  const anPrice = document.getElementById('an-price');
+  const anChange = document.getElementById('an-change');
+
+  // Media controls
+  const imageInput = document.getElementById('image-input');
+  const imagePreview = document.getElementById('image-preview');
+  const imageClear = document.getElementById('image-clear');
+  const iconButtons = document.querySelectorAll('.icon-choice');
+  let selectedIcon = 'fa-seedling';
+  let uploadedImageDataURL = '';
+
+  function setContextUI(ctx, mode) {
+    [mediaRow, goalFields, reminderFields, inventoryFields, badgeFields, analyticsFields, genericFields].forEach(el => el.classList.add('hidden'));
+    const action = mode === 'edit' ? 'Edit' : 'Add';
+    switch (ctx) {
+      case 'goals':
+        goalFields.classList.remove('hidden');
+        modalTitle.textContent = `${action} Goal`;
+        modalSubtitle.textContent = 'Set goal title, period and progress.';
+        break;
+      case 'reminders':
+        reminderFields.classList.remove('hidden');
+        modalTitle.textContent = `${action} Reminder`;
+        modalSubtitle.textContent = 'Set reminder title and frequency.';
+        break;
+      case 'economy':
+        inventoryFields.classList.remove('hidden');
+        modalTitle.textContent = `${action} Inventory Item`;
+        modalSubtitle.textContent = 'Specify item name, quantity and price.';
+        break;
+      case 'badges':
+        badgeFields.classList.remove('hidden');
+        modalTitle.textContent = `${action} Badge`;
+        modalSubtitle.textContent = 'Enter a badge name.';
+        break;
+      case 'analytics':
+        analyticsFields.classList.remove('hidden');
+        modalTitle.textContent = `${action} Analytics Item`;
+        modalSubtitle.textContent = 'Add a market item with price and change.';
+        break;
+      default:
+        mediaRow.classList.remove('hidden');
+        genericFields.classList.remove('hidden');
+        modalTitle.textContent = `${action} Content`;
+        modalSubtitle.textContent = 'Choose an icon or upload a photo. Fill in the title and description.';
+    }
+  }
+
+  function openModal(targetId, ctx = 'generic', mode = 'add', seed = null, nodePath = '') {
+    targetIdInput.value = targetId;
+    contextInput.value = ctx;
+    editPathInput.value = nodePath || '';
+
+    // Clear fields
+    [genTitle, genDesc, goalTitle, remTitle, remFreq, invName, badgeName, anItem].forEach(i => { if (i) i.value = ''; });
+    [goalTarget, goalCurrent, invQty, invPrice, anPrice].forEach(i => { if (i) i.value = ''; });
+    anChange.value = ''; goalBadge.value = 'Daily';
+    agree.checked = false; updateSubmitState();
+
+    // Reset media
+    uploadedImageDataURL = ''; imagePreview.classList.add('hidden'); imageClear.classList.add('hidden'); imageInput.value = '';
+    selectedIcon = 'fa-seedling'; iconButtons.forEach(b => b.classList.toggle('active', b.dataset.icon === selectedIcon));
+
+    // Context and prefill
+    setContextUI(ctx, mode);
+    if (mode === 'edit' && seed) {
+      if (ctx === 'goals') { goalTitle.value = seed.title||''; goalTarget.value = seed.target||''; goalCurrent.value = seed.current||''; goalBadge.value = seed.badge||'Daily'; }
+      if (ctx === 'reminders') { remTitle.value = seed.title||''; remFreq.value = seed.freq||''; }
+      if (ctx === 'economy') { invName.value = seed.name||''; invQty.value = seed.qty||''; invPrice.value = seed.price||''; }
+      if (ctx === 'badges') { badgeName.value = seed.badge||''; }
+      if (ctx === 'analytics') { anItem.value = seed.item||''; anPrice.value = seed.price||''; anChange.value = seed.change||''; }
+    }
+
+    addModal.classList.add('active');
+    setTimeout(() => {
+      const focusable = document.querySelector('#' + ctx + '-fields input, #' + ctx + '-fields textarea') || genTitle;
+      (focusable || genTitle).focus();
+    }, 50);
+  }
+  function closeModal() { addModal.classList.remove('active'); }
+  modalClose.addEventListener('click', closeModal);
+  modalCancel.addEventListener('click', closeModal);
+  addModal.addEventListener('click', (e) => {
+    const modalBox = e.target.closest('.modal');
+    if (!modalBox && e.target.closest('.modal-shell')) closeModal();
+  });
+
+  // Open modal by buttons/placeholders
+  document.querySelectorAll('.open-add').forEach(btn => {
+    btn.addEventListener('click', () => openModal(btn.dataset.target, btn.dataset.context || 'generic', 'add'));
+  });
+  document.querySelectorAll('.add-placeholder').forEach(ph => {
+    ph.addEventListener('click', () => openModal(ph.dataset.target || ph.closest('[id]').id, ph.dataset.context || 'generic', 'add'));
+  });
+
+  // Inline edit buttons
+  document.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-card');
+    if (!editBtn) return;
+    const card = editBtn.closest('.content-card') || editBtn.closest('[data-type]');
+    const container = card.closest('[data-sortable]') || card.parentElement;
+    const containerId = container.id;
+    let ctx = 'generic', seed = {}, path = getNodePath(card);
+
+    if (containerId.includes('goals')) {
+      ctx = 'goals';
+      const counter = card.querySelector('[data-edit="counter"]')?.innerText || '0/0';
+      const [current, target] = counter.split('/').map(v => v.replace(/\D/g,'') || '0');
+      seed = { title: card.querySelector('[data-edit="title"]').innerText, current, target, badge: card.querySelector('[data-edit="badge"]').innerText };
+    } else if (containerId.includes('reminders')) {
+      ctx = 'reminders';
+      seed = { title: card.querySelector('[data-edit="title"]').innerText, freq: card.querySelector('[data-edit="freq"]').innerText };
+    } else if (containerId.includes('economy')) {
+      ctx = 'economy';
+      const first = card.querySelector('.inv-item');
+      seed = first ? { name: first.dataset.name, qty: first.dataset.qty, price: first.dataset.price } : {};
+    } else if (containerId.includes('badges')) {
+      ctx = 'badges';
+      seed = { badge: card.querySelector('[data-edit="badge-name"]')?.innerText || 'Badge' };
+    } else if (containerId.includes('analytics')) {
+      ctx = 'analytics';
+      const itemEl = card.querySelector('[data-edit="item"], [data-edit="crop"]');
+      const priceEl = card.querySelector('[data-edit="price"]');
+      const changeEl = card.querySelector('[data-edit="change"], [data-edit="gain"]');
+      seed = {
+        item: itemEl ? itemEl.innerText : '',
+        price: priceEl ? (priceEl.innerText.match(/\d+/)||[''])[0] : '',
+        change: changeEl ? changeEl.innerText : ''
+      };
+    }
+    openModal(containerId, ctx, 'edit', seed, path);
+  });
+
+  function getNodePath(node) {
+    if (!node || !node.parentNode) return '';
+    const parent = node.parentNode;
+    const idx = [...parent.children].indexOf(node);
+    return (parent.id || '') + '>' + idx;
+  }
+  function getNodeByPath(path) {
+    const [pid, idx] = path.split('>');
+    const p = document.getElementById(pid);
+    if (!p) return null;
+    return p.children[Number(idx)] || null;
+  }
+
+  // Enable submit based on context
+  function updateSubmitState() {
+    const ctx = contextInput.value || 'generic';
+    let valid = agree.checked;
+    if (ctx === 'goals') valid = valid && goalTitle.value.trim() && goalTarget.value !== '';
+    else if (ctx === 'reminders') valid = valid && remTitle.value.trim() && remFreq.value.trim();
+    else if (ctx === 'economy') valid = valid && invName.value.trim();
+    else if (ctx === 'badges') valid = valid && badgeName.value.trim();
+    else if (ctx === 'analytics') valid = valid && anItem.value.trim();
+    else valid = valid && genTitle.value.trim();
+    modalSubmit.disabled = !valid;
+  }
+  document.querySelectorAll('#add-form input, #add-form textarea, #add-form select').forEach(el => {
+    el.addEventListener('input', updateSubmitState);
+    el.addEventListener('change', updateSubmitState);
+  });
+  agree.addEventListener('change', updateSubmitState);
+
+  // Media selection
+  iconButtons.forEach(btn => btn.addEventListener('click', () => {
+    selectedIcon = btn.dataset.icon;
+    uploadedImageDataURL = '';
+    imagePreview.classList.add('hidden');
+    imageClear.classList.add('hidden');
+    iconButtons.forEach(b => b.classList.toggle('active', b === btn));
+  }));
+  imageInput?.addEventListener('change', () => {
+    const file = imageInput.files && imageInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      uploadedImageDataURL = e.target.result;
+      imagePreview.src = uploadedImageDataURL;
+      imagePreview.classList.remove('hidden');
+      imageClear.classList.remove('hidden');
+      iconButtons.forEach(b => b.classList.remove('active'));
+    };
+    reader.readAsDataURL(file);
+  });
+  imageClear?.addEventListener('click', () => {
+    uploadedImageDataURL = '';
+    imagePreview.src = '';
+    imagePreview.classList.add('hidden');
+    imageClear.classList.add('hidden');
+    iconButtons.forEach(b => b.classList.toggle('active', b.dataset.icon === selectedIcon));
+  });
+
+  // Submit add/edit
+  document.getElementById('add-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (modalSubmit.disabled) return;
+
+    const ctx = contextInput.value || 'generic';
+    const container = document.getElementById(targetIdInput.value);
+    const editPath = editPathInput.value;
+    const editingNode = editPath ? getNodeByPath(editPath) : null;
+
+    if (ctx === 'goals') {
+      const title = goalTitle.value.trim() || 'New Goal';
+      const current = Number(goalCurrent.value || 0);
+      const target = Number(goalTarget.value || 0);
+      const badge = goalBadge.value;
+
+      if (editingNode) {
+        editingNode.querySelector('[data-edit="title"]').innerText = title;
+        editingNode.querySelector('[data-edit="badge"]').innerText = badge;
+        const percent = Math.max(0, Math.min(100, Math.round((current||0)/(target||1)*100)));
+        editingNode.querySelector('[data-edit="counter"]').innerText = `${current}/${target}`;
+        const bar = editingNode.querySelector('.bg-primary.h-2, .bg-blue-500.h-2, .bg-green-500.h-2');
+        if (bar) bar.style.width = `${percent}%`;
+      } else {
+        const color = badge === 'Monthly' ? 'blue' : badge === 'Weekly' ? 'primary' : 'green';
+        const div = document.createElement('div');
+        div.className = 'bg-white rounded-xl p-4 shadow-sm border border-gray-200 content-card';
+        div.setAttribute('draggable','true');
+        div.dataset.type = 'goal';
+        const barClass = color === 'primary' ? 'bg-primary' : `bg-${color}-500`;
+        const percent = Math.max(0, Math.min(100, Math.round((current||0)/(target||1)*100)));
+        div.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-semibold text-black editable" data-edit="title">${escapeHtml(title)}</div>
+            <span class="text-xs ${color==='primary'?'bg-primary':'bg-'+color+'-500'} text-white px-2 py-1 rounded-full editable" data-edit="badge">${escapeHtml(badge)}</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div class="${barClass} h-2 rounded-full" style="width: ${percent}%"></div>
+          </div>
+          <div class="flex items-center justify-end gap-3 text-gray-500 text-sm">
+            <span class="editable" data-edit="counter">${current}/${target}</span>
+            <button class="edit-card hover:text-primary" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="hover:text-red-500" data-remove title="Remove"><i class="fa-solid fa-trash-can"></i></button>
+          </div>`;
+        wireCard(div);
+        const placeholder = container.querySelector('.add-placeholder');
+        container.insertBefore(div, placeholder);
+      }
+    } else if (ctx === 'reminders') {
+      const title = remTitle.value.trim() || 'New Reminder';
+      const freq = remFreq.value.trim() || 'Scheduled';
+      if (editingNode) {
+        editingNode.querySelector('[data-edit="title"]').innerText = title;
+        editingNode.querySelector('[data-edit="freq"]').innerText = freq;
+      } else {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl p-4 shadow-sm border border-gray-200 content-card';
+        card.setAttribute('draggable','true');
+        card.dataset.type = 'reminder';
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <i class="fa-solid fa-bell text-primary mr-3"></i>
+              <div>
+                <div class="font-semibold text-black editable" data-edit="title">${escapeHtml(title)}</div>
+                <div class="text-sm text-gray-600 editable" data-edit="freq">${escapeHtml(freq)}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" checked>
+                <span class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></span>
+              </label>
+              <button class="edit-card text-gray-500 hover:text-primary" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="text-gray-400 hover:text-red-500" data-remove title="Remove"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>`;
+        wireCard(card);
+        const placeholder = container.querySelector('.add-placeholder');
+        container.insertBefore(card, placeholder);
+      }
+    } else if (ctx === 'economy') {
+      const name = invName.value.trim() || 'Item';
+      const qty = Number(invQty.value || 0);
+      const price = Number(invPrice.value || 0);
+      const grid = document.getElementById('inventory-grid') || container.querySelector('#inventory-grid');
+      const item = document.createElement('div');
+      item.className = 'bg-gray-50 p-3 rounded-lg inv-item';
+      item.dataset.name = name; item.dataset.qty = qty; item.dataset.price = price;
+      item.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <i class="fa-solid fa-box"></i>
+          <span class="text-xs bg-gray-200 px-2 py-1 rounded editable" data-edit="qty">x${qty}</span>
+        </div>
+        <p class="text-sm font-medium text-black editable" data-edit="name">${escapeHtml(name)}</p>
+        <p class="text-xs text-gray-600 editable" data-edit="price">${price} coins each</p>`;
+      grid.appendChild(item);
+    } else if (ctx === 'badges') {
+      const name = badgeName.value.trim() || 'New Badge';
+      const grid = document.querySelector('#badges-list .grid') || container;
+      const card = document.createElement('div');
+      card.className = 'bg-gradient-to-br from-yellow-400 to-yellow-600 p-4 rounded-lg text-center';
+      card.innerHTML = `<i class="fa-solid fa-star text-white text-2xl mb-2"></i><p class="text-xs text-white font-medium editable" data-edit="badge-name">${escapeHtml(name)}</p>`;
+      grid.appendChild(card);
+    } else if (ctx === 'analytics') {
+      const item = anItem.value.trim() || 'Item';
+      const price = Number(anPrice.value || 0);
+      const change = anChange.value.trim() || '+0%';
+      const list = container.querySelector('[data-type="trend-list"] .space-y-3') || container;
+      const up = change.startsWith('+');
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+      row.innerHTML = `
+        <div class="flex items-center">
+          <i class="fa-solid fa-seedling text-green-500 mr-3"></i>
+          <div>
+            <div class="font-medium text-black editable" data-edit="item">${escapeHtml(item)}</div>
+            <div class="text-xs text-gray-600 editable" data-edit="price">${price} coins</div>
+          </div>
+        </div>
+        <div class="flex items-center ${up ? 'text-green-600':'text-red-600'}">
+          <i class="fa-solid ${up ? 'fa-arrow-up':'fa-arrow-down'} text-xs mr-1"></i>
+          <span class="text-sm editable" data-edit="change">${escapeHtml(change)}</span>
+        </div>`;
+      list.appendChild(row);
+    } else {
+      const title = genTitle.value.trim() || 'New Card';
+      const desc = genDesc.value.trim();
+      const el = document.createElement('div');
+      el.className = 'bg-white rounded-xl p-4 shadow-sm border border-gray-200 content-card';
+      el.setAttribute('draggable','true');
+      el.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-2">
+              ${uploadedImageDataURL
+                ? `<img src="${uploadedImageDataURL}" class="w-10 h-10 rounded-lg object-cover">`
+                : `<div class="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center text-primary"><i class="fa-solid ${selectedIcon}"></i></div>`}
+              <div class="font-semibold text-black editable" data-edit="title">${escapeHtml(title)}</div>
+            </div>
+            ${desc ? `<div class="text-sm text-gray-700 editable" data-edit="desc">${escapeHtml(desc)}</div>` : ''}
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="edit-card text-gray-500 hover:text-primary" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="text-gray-400 hover:text-red-500" data-remove title="Remove"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>`;
+      wireCard(el);
+      const placeholder = container.querySelector('.add-placeholder');
+      container.insertBefore(el, placeholder);
+    }
+
+    closeModal();
+  });
+
+  // Quick reminder form
+  const reminderForm = document.getElementById('reminder-form');
+  reminderForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = reminderForm.title.value.trim() || 'New Reminder';
+    const freq = reminderForm.freq.value;
+    const container = document.getElementById('reminders-list');
+    const event = new Event('click');
+    openModal('reminders-list', 'reminders', 'add', { title, freq });
+    // But we actually want to insert immediately for quick form:
+    const add = document.createEvent('Event'); add.initEvent('submit', true, true);
+  });
+
+  // Remove and drag wiring
+  function wireCard(card) {
+    const removeBtn = card.querySelector('[data-remove]');
+    removeBtn && removeBtn.addEventListener('click', () => card.remove());
+  }
+  document.querySelectorAll('.content-card, [data-type]').forEach(wireCard);
+
+  // Sortable
+  document.querySelectorAll('[data-sortable]').forEach(list => {
+    let dragEl = null;
+    list.addEventListener('dragstart', e => {
+      const t = e.target.closest('.content-card[draggable="true"], [data-type][draggable="true"]');
+      if (!t) return;
+      dragEl = t; t.classList.add('ghost');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', 'drag'); } catch {}
+    });
+    list.addEventListener('dragend', e => {
+      const t = e.target.closest('.content-card[draggable="true"], [data-type][draggable="true"]');
+      if (t) t.classList.remove('ghost');
+      dragEl = null;
+    });
+    list.addEventListener('dragover', e => {
+      e.preventDefault();
+      const after = getAfter(list, e.clientY);
+      if (!dragEl) return;
+      const placeholder = list.querySelector('.add-placeholder');
+      if (!after) list.insertBefore(dragEl, placeholder || null);
+      else list.insertBefore(dragEl, after);
+    });
+    function getAfter(container, y) {
+      const els = [...container.querySelectorAll('.content-card[draggable="true"]:not(.ghost), [data-type][draggable="true"]:not(.ghost)')];
+      return els.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) return { offset, element: child };
+        return closest;
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+  });
+
+  function escapeHtml(str) {
+    return (str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+</script>
+
+
+</body></html>
